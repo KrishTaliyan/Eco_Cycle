@@ -1,0 +1,99 @@
+services:
+  - type: web
+    name: ecocycle-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /up
+    preDeployCommand: php artisan migrate --force
+    initialDeployHook: php artisan db:seed --force
+    envVars:
+      - key: APP_NAME
+        value: EcoCycle Smart
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        fromDatabase:
+          name: ecocycle-db
+          property: connectionString
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: DEMO_LOGIN_ENABLED
+        value: false
+      - key: ADMIN_NAME
+        value: Platform Admin
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: MAIL_MAILER
+        value: log
+
+  - type: worker
+    name: ecocycle-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: /usr/local/bin/start-worker
+    envVars:
+      - key: APP_NAME
+        value: EcoCycle Smart
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        fromService:
+          name: ecocycle-web
+          type: web
+          envVarKey: APP_KEY
+      - key: APP_URL
+        fromService:
+          name: ecocycle-web
+          type: web
+          envVarKey: APP_URL
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        fromDatabase:
+          name: ecocycle-db
+          property: connectionString
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: DEMO_LOGIN_ENABLED
+        value: false
+      - key: MAIL_MAILER
+        value: log
+
+databases:
+  - name: ecocycle-db
+    databaseName: ecocycle
+    user: ecocycle
