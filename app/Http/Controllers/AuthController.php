@@ -45,6 +45,8 @@ class AuthController extends Controller
 
     public function demoLogin(Request $request, ActivityLogger $logger, NotificationService $notifications)
     {
+        abort_unless(config('services.demo_login.enabled'), 404);
+
         $user = User::firstOrCreate([
             'email' => 'demo@ecocycle.test',
         ], [

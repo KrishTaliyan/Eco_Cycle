@@ -30,10 +30,19 @@ class ExampleTest extends TestCase
 
     public function test_demo_login_opens_workspace(): void
     {
+        config(['services.demo_login.enabled' => true]);
+
         $this->post('/demo-login')->assertRedirect('/dashboard');
 
         $this->assertAuthenticated();
         $this->assertAuthenticatedAs(User::where('email', 'demo@ecocycle.test')->first());
+    }
+
+    public function test_demo_login_is_disabled_by_default(): void
+    {
+        $this->post('/demo-login')->assertNotFound();
+
+        $this->assertGuest();
     }
 
     public function test_user_can_register_verify_and_logout(): void

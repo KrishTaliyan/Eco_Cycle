@@ -41,4 +41,8 @@ return [
         'api_secret' => env('CLOUDINARY_API_SECRET'),
     ],
 
+    'demo_login' => [
+        'enabled' => env('DEMO_LOGIN_ENABLED', false),
+    ],
+
 ];

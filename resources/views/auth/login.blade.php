@@ -42,16 +42,18 @@
         </button>
     </form>
 
-    <div class="demo-card">
-        <p>Try the full platform without signing up.</p>
-        <form method="POST" action="{{ route('login.demo') }}">
-            @csrf
-            <button class="eco-button eco-button-secondary auth-submit" type="submit">
-                <i data-lucide="play-circle"></i>
-                <span>Launch demo workspace</span>
-            </button>
-        </form>
-    </div>
+    @if (config('services.demo_login.enabled'))
+        <div class="demo-card">
+            <p>Try the full platform without signing up.</p>
+            <form method="POST" action="{{ route('login.demo') }}">
+                @csrf
+                <button class="eco-button eco-button-secondary auth-submit" type="submit">
+                    <i data-lucide="play-circle"></i>
+                    <span>Launch demo workspace</span>
+                </button>
+            </form>
+        </div>
+    @endif
 
     <div class="auth-footer">
         Don't have an account?
