@@ -40,7 +40,7 @@ class AuthController extends Controller
         $notifications->onboarding($request->user());
         $logger->record('auth.login', 'Signed in to the workspace.', $request, $request->user());
 
-        return redirect()->intended(route('dashboard'));
+        return $this->redirectAfterLogin($request);
     }
 
     public function demoLogin(Request $request, ActivityLogger $logger, NotificationService $notifications)
@@ -70,8 +70,21 @@ class AuthController extends Controller
         $logger->record('auth.demo_login', 'Opened the demo workspace.', $request, $user);
 
         return redirect()
-            ->route('dashboard')
+            ->route('admin.dashboard')
             ->with('status', 'Demo workspace ready. All controls are live.');
+    }
+
+    private function redirectAfterLogin(Request $request)
+    {
+        if ($request->user()->hasRole('admin')) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        if ($request->user()->hasRole('shop_owner')) {
+            return redirect()->route('shop.dashboard');
+        }
+
+        return redirect()->intended(route('dashboard'));
     }
 
     public function showRegister()

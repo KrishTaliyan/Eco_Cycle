@@ -32,7 +32,7 @@ class ExampleTest extends TestCase
     {
         config(['services.demo_login.enabled' => true]);
 
-        $this->post('/demo-login')->assertRedirect('/dashboard');
+        $this->post('/demo-login')->assertRedirect('/admin');
 
         $this->assertAuthenticated();
         $this->assertAuthenticatedAs(User::where('email', 'demo@ecocycle.test')->first());
@@ -43,6 +43,22 @@ class ExampleTest extends TestCase
         $this->post('/demo-login')->assertNotFound();
 
         $this->assertGuest();
+    }
+
+    public function test_admin_login_redirects_to_admin_dashboard(): void
+    {
+        Role::create(['name' => 'admin', 'label' => 'Admin']);
+        $user = User::factory()->create([
+            'email' => 'admin@example.com',
+            'password' => 'Password123',
+            'role' => 'admin',
+        ]);
+        $user->assignRole('admin');
+
+        $this->post('/login', [
+            'email' => 'admin@example.com',
+            'password' => 'Password123',
+        ])->assertRedirect('/admin');
     }
 
     public function test_user_can_register_verify_and_logout(): void
