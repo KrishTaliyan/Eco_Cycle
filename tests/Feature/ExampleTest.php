@@ -61,6 +61,31 @@ class ExampleTest extends TestCase
         ])->assertRedirect('/admin');
     }
 
+    public function test_admin_dashboard_uses_admin_only_shell(): void
+    {
+        Role::create(['name' => 'admin', 'label' => 'Admin']);
+        $user = User::factory()->create(['role' => 'admin']);
+        $user->assignRole('admin');
+
+        $this->actingAs($user)
+            ->get('/admin')
+            ->assertOk()
+            ->assertSee('Admin Console')
+            ->assertSee('Control platform access and approvals.')
+            ->assertDontSee('E-waste made simple')
+            ->assertDontSee('Responsible recycling platform.');
+
+        $this->actingAs($user)
+            ->get('/profile')
+            ->assertOk()
+            ->assertSee('Admin Console')
+            ->assertDontSee('E-waste made simple');
+
+        $this->actingAs($user)
+            ->get('/shop')
+            ->assertForbidden();
+    }
+
     public function test_user_can_register_verify_and_logout(): void
     {
         $response = $this->post('/signup', [

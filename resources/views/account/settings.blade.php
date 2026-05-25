@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends(auth()->user()?->hasRole('admin') ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Settings')
 

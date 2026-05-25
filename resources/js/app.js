@@ -1057,27 +1057,47 @@ function bindPointerFx() {
 
 function bindSideNav() {
     const backdrop = document.querySelector('.side-nav-backdrop');
-    const open = () => {
-        document.body.classList.add('sidebar-open');
-        if (backdrop) {
-            backdrop.hidden = false;
-        }
-    };
-    const close = () => {
-        document.body.classList.remove('sidebar-open');
+    const desktopQuery = window.matchMedia('(min-width: 1024px)');
+
+    const isDesktop = () => desktopQuery.matches;
+
+    const hideBackdrop = () => {
         if (backdrop) {
             backdrop.hidden = true;
         }
     };
 
+    const open = () => {
+        document.body.classList.remove('sidebar-collapsed');
+        document.body.classList.add('sidebar-open');
+        if (backdrop && !isDesktop()) {
+            backdrop.hidden = false;
+        }
+    };
+
+    const close = (collapseDesktop = false) => {
+        document.body.classList.remove('sidebar-open');
+
+        if (isDesktop() && collapseDesktop) {
+            document.body.classList.add('sidebar-collapsed');
+        }
+
+        hideBackdrop();
+    };
+
     document.querySelectorAll('[data-sidebar-toggle]').forEach((button) => button.addEventListener('click', open));
-    document.querySelectorAll('[data-sidebar-close]').forEach((button) => button.addEventListener('click', close));
-    document.querySelectorAll('.side-nav a').forEach((link) => link.addEventListener('click', close));
+    document.querySelectorAll('[data-sidebar-close]').forEach((button) => button.addEventListener('click', () => close(true)));
+    document.querySelectorAll('.side-nav a').forEach((link) => link.addEventListener('click', () => {
+        if (!isDesktop()) {
+            close(false);
+        }
+    }));
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
-            close();
+            close(true);
         }
     });
+    desktopQuery.addEventListener('change', hideBackdrop);
 }
 
 function bindPasswordToggles() {

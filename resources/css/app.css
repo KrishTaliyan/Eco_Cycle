@@ -121,6 +121,12 @@
         @apply mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8;
     }
 
+    .site-header,
+    .app-shell,
+    .site-footer {
+        transition: margin-left 300ms ease;
+    }
+
     html[data-theme='dark'] .site-header {
         background:
             linear-gradient(90deg, rgba(17, 24, 39, 0.88), rgba(15, 23, 42, 0.8)),
@@ -149,6 +155,7 @@
 
     .side-nav {
         @apply fixed bottom-0 left-0 top-0 z-[60] flex w-[18rem] -translate-x-full flex-col gap-4 border-r p-4 transition duration-300 lg:translate-x-0;
+        transition-property: translate, transform, box-shadow;
         border-color: var(--app-border);
         background:
             linear-gradient(180deg, color-mix(in srgb, var(--app-card) 96%, transparent), color-mix(in srgb, var(--app-card-soft) 86%, transparent)),
@@ -157,7 +164,12 @@
     }
 
     body.sidebar-open .side-nav {
-        transform: translateX(0);
+        translate: 0 0;
+    }
+
+    body.sidebar-collapsed .side-nav {
+        translate: -100% 0;
+        box-shadow: none;
     }
 
     html[data-theme='dark'] .side-nav {
@@ -386,6 +398,197 @@
         .site-footer > div {
             max-width: none;
         }
+
+        body.sidebar-collapsed .site-header,
+        body.sidebar-collapsed .app-shell,
+        body.sidebar-collapsed .site-footer {
+            margin-left: 0;
+        }
+    }
+
+    body.admin-body {
+        background:
+            linear-gradient(115deg, rgba(20, 184, 166, 0.1), transparent 34%),
+            radial-gradient(ellipse at 88% 6%, rgba(249, 115, 22, 0.16), transparent 28rem),
+            radial-gradient(ellipse at 12% 84%, rgba(59, 130, 246, 0.12), transparent 30rem),
+            linear-gradient(145deg, #f8fafc, #eef6f4 58%, #f8fafc);
+    }
+
+    html[data-theme='dark'] body.admin-body {
+        background:
+            linear-gradient(115deg, rgba(20, 184, 166, 0.12), transparent 32%),
+            radial-gradient(ellipse at 88% 4%, rgba(249, 115, 22, 0.18), transparent 28rem),
+            radial-gradient(ellipse at 16% 88%, rgba(20, 184, 166, 0.12), transparent 30rem),
+            linear-gradient(145deg, #101010, #111917 58%, #151515);
+    }
+
+    body.admin-body::before {
+        opacity: 0.32;
+    }
+
+    .admin-header {
+        background: color-mix(in srgb, var(--app-card) 92%, transparent);
+        box-shadow: 0 12px 36px rgba(15, 23, 42, 0.07);
+    }
+
+    html[data-theme='dark'] .admin-header {
+        background:
+            linear-gradient(90deg, rgba(17, 24, 39, 0.88), rgba(16, 24, 22, 0.84)),
+            linear-gradient(90deg, rgba(20, 184, 166, 0.08), rgba(249, 115, 22, 0.08));
+    }
+
+    .admin-side-nav {
+        background:
+            linear-gradient(180deg, color-mix(in srgb, var(--app-card) 98%, transparent), color-mix(in srgb, var(--app-card-soft) 88%, transparent)),
+            var(--app-card);
+    }
+
+    html[data-theme='dark'] .admin-side-nav {
+        background:
+            linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(16, 24, 22, 0.96)),
+            linear-gradient(160deg, rgba(20, 184, 166, 0.12), rgba(249, 115, 22, 0.08));
+    }
+
+    .admin-mark {
+        background: linear-gradient(135deg, #111827, #14b8a6 48%, #f97316);
+        box-shadow: 0 16px 34px rgba(20, 184, 166, 0.24);
+    }
+
+    .admin-identity-card p {
+        @apply mt-1 text-sm leading-5;
+        color: var(--app-muted);
+    }
+
+    .admin-identity-card button {
+        @apply mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg px-3 text-sm font-black text-white;
+        background: linear-gradient(135deg, #111827, #14b8a6);
+    }
+
+    .admin-hero {
+        @apply grid items-center gap-5 overflow-hidden rounded-lg border p-5 shadow-sm sm:p-7 lg:grid-cols-[1fr_340px];
+        position: relative;
+        border-color: var(--app-border);
+        background:
+            linear-gradient(120deg, rgba(20, 184, 166, 0.16), transparent 32%),
+            linear-gradient(235deg, rgba(249, 115, 22, 0.14), transparent 30%),
+            linear-gradient(145deg, color-mix(in srgb, var(--app-card) 96%, transparent), color-mix(in srgb, var(--app-card-soft) 86%, transparent));
+        box-shadow: var(--app-shadow);
+        isolation: isolate;
+    }
+
+    html[data-theme='dark'] .admin-hero {
+        background:
+            linear-gradient(120deg, rgba(20, 184, 166, 0.16), transparent 34%),
+            linear-gradient(235deg, rgba(249, 115, 22, 0.14), transparent 32%),
+            linear-gradient(145deg, rgba(17, 24, 39, 0.9), rgba(15, 23, 20, 0.9));
+    }
+
+    .admin-hero h1 {
+        @apply mt-3 max-w-3xl text-3xl font-black leading-tight sm:text-4xl;
+        color: var(--app-text);
+        text-wrap: balance;
+    }
+
+    .admin-hero-panel {
+        @apply rounded-lg border p-4;
+        border-color: var(--app-border);
+        background: color-mix(in srgb, var(--app-card) 82%, transparent);
+        backdrop-filter: blur(18px);
+    }
+
+    .admin-hero-panel strong {
+        @apply mt-2 block text-xl font-black;
+        color: var(--app-text);
+    }
+
+    .admin-hero-stack {
+        @apply mt-4 grid gap-2;
+    }
+
+    .admin-hero-stack span {
+        @apply flex min-h-10 items-center gap-2 rounded-lg border px-3 text-sm font-black;
+        border-color: var(--app-border);
+        background: var(--app-card);
+        color: var(--app-muted);
+    }
+
+    .admin-hero-stack svg {
+        @apply size-4;
+        color: #0f9f92;
+    }
+
+    .admin-duty-grid {
+        @apply grid gap-4 md:grid-cols-2 xl:grid-cols-4;
+    }
+
+    .admin-duty-card {
+        @apply grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border p-4 shadow-sm transition;
+        border-color: var(--app-border);
+        background: var(--app-card);
+        box-shadow: var(--app-shadow);
+    }
+
+    .admin-duty-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(20, 184, 166, 0.38);
+    }
+
+    .admin-duty-card strong {
+        @apply block text-sm font-black;
+        color: var(--app-text);
+    }
+
+    .admin-duty-card p {
+        @apply mt-1 text-sm;
+        color: var(--app-muted);
+    }
+
+    .admin-duty-card > svg {
+        @apply size-4;
+        color: var(--app-muted);
+    }
+
+    .admin-role-grid .role-card p {
+        @apply text-xs leading-5;
+    }
+
+    .admin-request-row {
+        display: grid;
+        gap: 1rem;
+    }
+
+    @media (min-width: 1024px) {
+        .admin-request-row {
+            grid-template-columns: minmax(0, 1fr) minmax(26rem, 1.45fr);
+        }
+    }
+
+    .admin-request-main {
+        @apply min-w-0;
+    }
+
+    .admin-request-form {
+        @apply grid gap-2;
+    }
+
+    @media (min-width: 768px) {
+        .admin-request-form {
+            grid-template-columns: minmax(8rem, 0.85fr) 7rem minmax(12rem, 1fr) auto;
+        }
+    }
+
+    .admin-request-form select,
+    .admin-request-form input {
+        @apply min-h-10 rounded-lg border px-3 text-sm;
+        border-color: var(--app-border);
+        background: var(--app-card);
+        color: var(--app-text);
+    }
+
+    .icon-button.danger:hover {
+        border-color: rgba(244, 63, 94, 0.26);
+        background: rgba(244, 63, 94, 0.12);
+        color: #e11d48;
     }
 
     .site-footer h3 {

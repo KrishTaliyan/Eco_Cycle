@@ -55,17 +55,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/bookmarks/{bookmark}', [AccountController::class, 'removeBookmark'])->name('bookmarks.destroy');
 
     Route::post('/customer/recycling-requests', [CustomerController::class, 'storeRequest'])
-        ->middleware('role:customer,admin')
+        ->middleware('role:customer')
         ->name('customer.requests.store');
 
     Route::get('/shop', [ShopOwnerController::class, 'dashboard'])
-        ->middleware('role:shop_owner,admin')
+        ->middleware('role:shop_owner')
         ->name('shop.dashboard');
     Route::post('/shop/centers', [ShopOwnerController::class, 'storeCenter'])
-        ->middleware('role:shop_owner,admin')
+        ->middleware('role:shop_owner')
         ->name('shop.centers.store');
     Route::put('/shop/requests/{recyclingRequest}', [ShopOwnerController::class, 'updateRequest'])
-        ->middleware('role:shop_owner,admin')
+        ->middleware('role:shop_owner')
         ->name('shop.requests.update');
 
     Route::get('/admin', AdminController::class)->middleware('role:admin')->name('admin.dashboard');

@@ -33,6 +33,13 @@ class AdminController extends Controller
                 ->selectRaw('role, count(*) as total')
                 ->groupBy('role')
                 ->pluck('total', 'role'),
+            'queues' => [
+                'pending_requests' => RecyclingRequest::where('status', 'pending')->count(),
+                'unassigned_centers' => RecyclingCenter::whereNull('shop_owner_id')->count(),
+                'inactive_centers' => RecyclingCenter::where('status', 'inactive')->count(),
+                'open_pickups' => PickupRequest::whereNotIn('status', ['completed', 'cancelled'])->count(),
+                'recent_actions' => ActivityLog::where('created_at', '>=', now()->subDay())->count(),
+            ],
             'totals' => [
                 'users' => User::count(),
                 'customers' => User::where('role', 'customer')->count(),
