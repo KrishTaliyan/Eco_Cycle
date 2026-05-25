@@ -42,7 +42,7 @@ RUN apt-get update \
         pdo_mysql \
         pdo_pgsql \
         zip \
-    && a2enmod headers rewrite \
+    && a2dismod mpm_event && a2enmod mpm_prefork headers rewrite \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html
