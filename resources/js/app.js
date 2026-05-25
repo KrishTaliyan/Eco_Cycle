@@ -1,5 +1,140 @@
 import './bootstrap';
-import { createIcons, icons } from 'lucide';
+import {
+    ArrowRight,
+    BadgeCheck,
+    Bell,
+    BookOpen,
+    BrainCircuit,
+    Building2,
+    CalendarCheck,
+    Check,
+    CheckCircle,
+    ChevronRight,
+    CircleCheck,
+    ClipboardCheck,
+    Clock,
+    Download,
+    Eye,
+    FileBadge,
+    Flame,
+    Gift,
+    HeartPulse,
+    Home,
+    ImagePlus,
+    LayoutDashboard,
+    Lightbulb,
+    LocateFixed,
+    Lock,
+    LockKeyhole,
+    LogIn,
+    LogOut,
+    Mail,
+    MailCheck,
+    Map,
+    MapPin,
+    MapPinned,
+    Menu,
+    MessageCircle,
+    Navigation,
+    PackagePlus,
+    Phone,
+    PlayCircle,
+    Plus,
+    QrCode,
+    Recycle,
+    RefreshCw,
+    RotateCw,
+    Save,
+    ScanLine,
+    Search,
+    Send,
+    Settings,
+    Share2,
+    Shield,
+    ShieldAlert,
+    ShieldCheck,
+    SlidersHorizontal,
+    Sparkles,
+    Store,
+    SunMoon,
+    TriangleAlert,
+    Trophy,
+    Truck,
+    UserPlus,
+    UserRound,
+    Users,
+    Waves,
+    X,
+    createIcons,
+} from 'lucide';
+
+const icons = {
+    ArrowRight,
+    BadgeCheck,
+    Bell,
+    BookOpen,
+    BrainCircuit,
+    Building2,
+    CalendarCheck,
+    Check,
+    CheckCircle,
+    ChevronRight,
+    CircleCheck,
+    ClipboardCheck,
+    Clock,
+    Download,
+    Eye,
+    FileBadge,
+    Flame,
+    Gift,
+    HeartPulse,
+    Home,
+    ImagePlus,
+    LayoutDashboard,
+    Lightbulb,
+    LocateFixed,
+    Lock,
+    LockKeyhole,
+    LogIn,
+    LogOut,
+    Mail,
+    MailCheck,
+    Map,
+    MapPin,
+    MapPinned,
+    Menu,
+    MessageCircle,
+    Navigation,
+    PackagePlus,
+    Phone,
+    PlayCircle,
+    Plus,
+    QrCode,
+    Recycle,
+    RefreshCw,
+    RotateCw,
+    Save,
+    ScanLine,
+    Search,
+    Send,
+    Settings,
+    Share2,
+    Shield,
+    ShieldAlert,
+    ShieldCheck,
+    SlidersHorizontal,
+    Sparkles,
+    Store,
+    SunMoon,
+    TriangleAlert,
+    Trophy,
+    Truck,
+    UserPlus,
+    UserRound,
+    Users,
+    Waves,
+    X,
+};
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 const formatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
@@ -19,6 +154,14 @@ const state = {
 
 document.addEventListener('DOMContentLoaded', () => {
     createIcons({ icons });
+    bindSideNav();
+    bindThemeControls();
+    bindPointerFx();
+    bindPasswordToggles();
+    bindGlobalSearch();
+    bindOtpInput();
+    bindClientValidation();
+    bindSmoothAnchors();
 
     if (document.querySelector('#deviceForm')) {
         bindDeviceForm();
@@ -42,12 +185,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+window.addEventListener('error', () => notify('Something went wrong. Please try again.'));
+window.addEventListener('unhandledrejection', () => notify('A network request failed.'));
+
 function bindDeviceForm() {
     const form = document.querySelector('#deviceForm');
     const modelInput = form.querySelector('[name="model_name"]');
+    const imageInput = form.querySelector('#deviceImageInput');
+    const imageLabel = form.querySelector('#deviceImageLabel');
 
     document.querySelectorAll('[data-model]').forEach((button) => {
         button.addEventListener('click', () => {
+            document.querySelectorAll('[data-model]').forEach((sample) => sample.classList.remove('active'));
+            button.classList.add('active');
             modelInput.value = button.dataset.model;
             syncPickupModel(button.dataset.model);
             modelInput.focus();
@@ -55,6 +205,9 @@ function bindDeviceForm() {
     });
 
     modelInput.addEventListener('input', () => syncPickupModel(modelInput.value));
+    imageInput?.addEventListener('change', () => {
+        imageLabel.textContent = imageInput.files?.[0]?.name ?? 'Upload photo';
+    });
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -72,17 +225,17 @@ function bindDeviceForm() {
             syncPickupModel(payload.analysis.identified_model);
             renderAnalysis(payload.analysis);
             showModal();
-            notify('Device impact report ready.');
+            notify('Report ready.');
         } catch (error) {
-            notify(error.message || 'Unable to analyze this device.');
+            notify(error.message || 'Unable to analyze.');
         } finally {
-            setBusy(submit, false, 'Analyze Device');
+            setBusy(submit, false, 'Analyze');
         }
     });
 }
 
 function bindFacilities() {
-    document.querySelector('#findFacilityBtn')?.addEventListener('click', () => loadFacilitiesFromLocation(false));
+    document.querySelector('#findFacilityBtn')?.addEventListener('click', (event) => loadFacilitiesFromLocation(false, event.currentTarget));
     document.querySelector('#useCityBtn')?.addEventListener('click', () => {
         useCityByName(document.querySelector('#citySelect')?.value ?? 'Delhi NCR');
     });
@@ -121,12 +274,18 @@ function useCityByName(cityName, automatic = false) {
     fetchFacilities(preset.lat, preset.lng, automatic ? 'India network loaded' : `${preset.city} selected`);
 }
 
-function loadFacilitiesFromLocation(automatic = false) {
+function loadFacilitiesFromLocation(automatic = false, button = null) {
     const status = document.querySelector('#locationStatus');
-    status.textContent = automatic ? 'Requesting live location...' : 'Finding nearest India e-waste centers...';
+    if (status) {
+        status.textContent = automatic ? 'Requesting location...' : 'Finding centers...';
+    }
+    setBusy(button, true, 'Finding');
 
     if (!navigator.geolocation) {
-        status.textContent = 'Geolocation unavailable. Showing Delhi NCR India network.';
+        if (status) {
+            status.textContent = 'Showing Delhi NCR.';
+        }
+        setBusy(button, false, 'Live');
         useCityByName('Delhi NCR');
         return;
     }
@@ -136,16 +295,25 @@ function loadFacilitiesFromLocation(automatic = false) {
             const { latitude, longitude } = position.coords;
 
             if (!isInsideIndia(latitude, longitude)) {
-                status.textContent = 'Location is outside India. Showing Delhi NCR India network.';
+                if (status) {
+                    status.textContent = 'Showing Delhi NCR.';
+                }
+                setBusy(button, false, 'Live');
                 useCityByName('Delhi NCR');
                 return;
             }
 
-            status.textContent = 'Live India location detected. Ranking nearby centers.';
+            if (status) {
+                status.textContent = 'Live location found.';
+            }
+            setBusy(button, false, 'Live');
             fetchFacilities(latitude, longitude, 'Live India location detected');
         },
         () => {
-            status.textContent = 'Location permission blocked. Showing Delhi NCR India network.';
+            if (status) {
+                status.textContent = 'Showing Delhi NCR.';
+            }
+            setBusy(button, false, 'Live');
             useCityByName('Delhi NCR');
         },
         { enableHighAccuracy: true, timeout: 7000, maximumAge: 60000 },
@@ -160,6 +328,8 @@ function isInsideIndia(lat, lng) {
 }
 
 async function fetchFacilities(lat, lng, label = 'India map updated') {
+    renderFacilitySkeleton();
+
     try {
         const response = await fetch(`/api/facilities/nearest?lat=${lat}&lng=${lng}&limit=8`, {
             headers: { Accept: 'application/json' },
@@ -168,19 +338,48 @@ async function fetchFacilities(lat, lng, label = 'India map updated') {
         state.facilities = payload.facilities;
         state.selectedFacility = payload.recommended;
         renderFacilities(payload.facilities);
-        document.querySelector('#locationStatus').textContent = `${label}. ${payload.facilities.length} matched centers ranked by distance and service fit.`;
-        notify('India facility map updated.');
+        const status = document.querySelector('#locationStatus');
+        if (status) {
+            status.textContent = `${label}. ${payload.facilities.length} centers found.`;
+        }
+        notify('Map updated.');
     } catch (error) {
         notify(error.message || 'Could not load facilities.');
     }
+}
+
+function renderFacilitySkeleton() {
+    const container = document.querySelector('#facilityResults');
+
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = Array.from({ length: 4 }).map(() => `
+        <article class="facility-card skeleton-card">
+            <div>
+                <span class="skeleton-line w-2/3"></span>
+                <span class="skeleton-line w-full"></span>
+                <span class="skeleton-line w-1/2"></span>
+            </div>
+            <div class="grid gap-2">
+                <span class="skeleton-pill"></span>
+                <span class="skeleton-pill"></span>
+            </div>
+        </article>
+    `).join('');
 }
 
 function renderFacilities(facilities) {
     const container = document.querySelector('#facilityResults');
     const map = document.querySelector('#facilityMap');
 
+    if (!container || !map) {
+        return;
+    }
+
     if (!facilities?.length) {
-        container.innerHTML = '<div class="empty-state">No India facilities found for this location.</div>';
+        container.innerHTML = '<div class="empty-state">No centers found. Try another city or use live location.</div>';
         map.src = state.coverageStats.map_embed_url ?? map.src;
         return;
     }
@@ -190,7 +389,7 @@ function renderFacilities(facilities) {
         : facilities.filter((facility) => Boolean(facility[state.facilityFilter]));
 
     if (!visibleFacilities.length) {
-        container.innerHTML = '<div class="empty-state">No centers match this filter. Try All or another city.</div>';
+        container.innerHTML = '<div class="empty-state">No centers match that filter. Try All or choose another service.</div>';
         return;
     }
 
@@ -207,24 +406,20 @@ function renderFacilities(facilities) {
                     <h3>${escapeHtml(facility.name)}</h3>
                     <span class="status-chip ${facility.open_status.is_open ? 'open' : 'closed'}">${facility.open_status.label}</span>
                 </div>
-                <p>${escapeHtml(facility.address)}</p>
-                <p>${formatter.format(facility.distance_km)} km away - ${facility.travel_time_label} - ${escapeHtml(facility.open_status.detail)}</p>
-                <p>${escapeHtml(facility.best_for)}</p>
-                <div class="mt-3 flex flex-wrap gap-1.5">
-                    ${facility.pickup_available ? '<span class="facility-tag">Pickup</span>' : ''}
-                    ${facility.data_wipe ? '<span class="facility-tag">Data wipe</span>' : ''}
-                    ${facility.battery_handling ? '<span class="facility-tag">Battery-safe</span>' : ''}
-                    ${facility.certificate_supported ? '<span class="facility-tag">QR certificate</span>' : ''}
-                    <span class="facility-tag">${escapeHtml(facility.zone)}</span>
+                <p><b>${formatter.format(facility.distance_km)} km</b> - ${escapeHtml(facility.travel_time_label)} - ${escapeHtml(facility.city)}</p>
+                <div class="facility-services">
+                    ${facility.services.slice(0, 3).map((service) => `<span class="facility-tag">${escapeHtml(service)}</span>`).join('')}
                 </div>
             </div>
-            <div class="flex items-center gap-2 sm:flex-col sm:items-end">
-                <span class="reward-pill">${facility.match_score}% fit</span>
+            <div class="facility-actions">
                 <button class="eco-button eco-button-secondary select-facility" type="button" data-id="${facility.id}">
-                    <i data-lucide="check"></i><span>Select</span>
+                    <i data-lucide="${state.selectedFacility?.id === facility.id ? 'circle-check' : 'map'}"></i><span>Map</span>
                 </button>
-                <a class="eco-button eco-button-secondary" href="${facility.directions_url}" target="_blank" rel="noreferrer">
-                    <i data-lucide="navigation"></i><span>Directions</span>
+                <a class="eco-button eco-button-secondary" href="${escapeHtml(facility.directions_url)}" target="_blank" rel="noreferrer">
+                    <i data-lucide="navigation"></i><span>Go</span>
+                </a>
+                <a class="eco-button eco-button-primary" href="/pickup?city=${encodeURIComponent(facility.city)}">
+                    <i data-lucide="truck"></i><span>Pickup</span>
                 </a>
             </div>
         </article>
@@ -242,6 +437,24 @@ function renderFacilities(facilities) {
 
 function bindPickupPlanner() {
     const form = document.querySelector('#pickupForm');
+    const params = new URLSearchParams(window.location.search);
+    const city = params.get('city');
+    const device = params.get('device');
+
+    if (city) {
+        const cityInput = form?.querySelector('[name="city"]');
+        if (cityInput && [...cityInput.options].some((option) => option.value === city)) {
+            cityInput.value = city;
+        }
+    }
+
+    if (device) {
+        const deviceInput = form?.querySelector('[name="model_name"]');
+        if (deviceInput) {
+            deviceInput.value = device;
+        }
+    }
+
     form?.addEventListener('submit', async (event) => {
         event.preventDefault();
         const submit = form.querySelector('button[type="submit"]');
@@ -263,11 +476,11 @@ function bindPickupPlanner() {
             });
             const payload = await parseJson(response);
             renderPickupResult(payload);
-            notify(`Pickup plan ${payload.booking_id} created.`);
+            notify('Pickup plan ready.');
         } catch (error) {
             notify(error.message || 'Pickup could not be planned.');
         } finally {
-            setBusy(submit, false, 'Plan Pickup');
+            setBusy(submit, false, 'Confirm Pickup');
         }
     });
 }
@@ -281,14 +494,25 @@ function syncPickupModel(model) {
 
 function renderPickupResult(payload) {
     const result = document.querySelector('#pickupResult');
+    if (!result) {
+        return;
+    }
+
+    const directions = payload.facility?.directions_url
+        ? `<a class="eco-button eco-button-secondary mt-3" href="${escapeHtml(payload.facility.directions_url)}" target="_blank" rel="noreferrer"><i data-lucide="navigation"></i><span>Directions</span></a>`
+        : '';
+
     result.innerHTML = `
         <strong>${escapeHtml(payload.booking_id)} - ${escapeHtml(payload.status)}</strong>
         <p>${escapeHtml(payload.message)}</p>
-        <p class="mt-2"><b>${escapeHtml(payload.facility?.name ?? 'Nearest India center')}</b> - ${escapeHtml(payload.city)} - ${payload.points_preview} point preview</p>
+        <p class="mt-2"><b>${escapeHtml(payload.facility?.name ?? 'Nearest center')}</b> - ${escapeHtml(payload.city)}</p>
+        <p class="mt-1">${escapeHtml(payload.preferred_window)} - ${payload.points_preview} pts</p>
+        ${directions}
         <div class="mt-3 grid gap-2">
             ${payload.prep_checklist.slice(0, 3).map((item) => renderCheckRow(item.step, item.detail)).join('')}
         </div>
     `;
+    createIcons({ icons });
 }
 
 function bindModal() {
@@ -310,12 +534,13 @@ function bindModal() {
 
 function renderAnalysis(analysis) {
     document.querySelector('#modalTitle').textContent = `${analysis.identified_model} impact report`;
-    document.querySelector('#modalSubtitle').textContent = `${analysis.category_label} - ${analysis.recognition.confidence}% confidence - ${analysis.recommendation.primary_action}`;
+    document.querySelector('#modalSubtitle').textContent = `${analysis.category_label} - ${analysis.recommendation.primary_action}`;
     document.querySelector('#ecoScore').textContent = analysis.eco_score;
     document.querySelector('#ecoScoreBar').style.width = `${analysis.eco_score}%`;
     document.querySelector('#didYouKnow').textContent = analysis.did_you_know;
 
     renderAnalysisStats(analysis);
+    renderModalImpact(analysis);
     renderRecommendation(analysis, document.querySelector('#recommendationBox'));
     renderRecommendation(analysis, document.querySelector('#recommendationPreview'));
     renderChecklist('#complianceChecklist', analysis.india_compliance);
@@ -338,10 +563,10 @@ function renderAnalysis(analysis) {
 
 function renderAnalysisStats(analysis) {
     const stats = [
-        ['Category code', analysis.category_code, 'India e-waste category estimate.'],
-        ['Repairability', analysis.repairability, 'Repair, donate, and reuse potential.'],
-        ['Value range', `INR ${rupeeFormatter.format(analysis.estimated_recycling_value_inr.min)}-${rupeeFormatter.format(analysis.estimated_recycling_value_inr.max)}`, analysis.estimated_recycling_value_inr.note],
-        ['Reward', `${analysis.points} pts`, `Base ${analysis.reward_breakdown.base_points} plus eco score multiplier.`],
+        ['Category', analysis.category_code, 'E-waste group'],
+        ['Repair', analysis.repairability, 'Reuse potential'],
+        ['Value', `INR ${rupeeFormatter.format(analysis.estimated_recycling_value_inr.min)}-${rupeeFormatter.format(analysis.estimated_recycling_value_inr.max)}`, 'Estimate'],
+        ['Reward', `${analysis.points} pts`, 'Points preview'],
     ];
 
     document.querySelector('#analysisStats').innerHTML = stats.map(([label, value, detail]) => `
@@ -353,6 +578,26 @@ function renderAnalysisStats(analysis) {
     `).join('');
 }
 
+function renderModalImpact(analysis) {
+    const impact = analysis.impact ?? analysis.environmental_impact ?? {};
+    const ewasteKg = analysis.ewaste_kg ?? impact.ewaste_kg ?? analysis.estimated_weight_kg ?? null;
+    const co2Kg = analysis.co2_kg ?? impact.co2_kg ?? impact.co2_saved_kg ?? (ewasteKg ? ewasteKg * 2.4 : null);
+    const waterLiters = impact.water_liters ?? impact.water_saved_liters ?? (ewasteKg ? ewasteKg * 740 : null);
+    const landfillLiters = impact.landfill_liters ?? impact.landfill_saved_liters ?? (ewasteKg ? ewasteKg * 4.5 : null);
+
+    setModalMetric('ewaste_kg', ewasteKg, 'kg');
+    setModalMetric('co2_kg', co2Kg, 'kg');
+    setModalMetric('water_liters', waterLiters, 'L');
+    setModalMetric('landfill_liters', landfillLiters, 'L');
+}
+
+function setModalMetric(key, value, unit) {
+    document.querySelectorAll(`[data-modal="${key}"]`).forEach((element) => {
+        const numeric = Number(value);
+        element.textContent = Number.isFinite(numeric) ? `${formatter.format(numeric)} ${unit}` : '-';
+    });
+}
+
 function renderRecommendation(analysis, target) {
     if (!target) {
         return;
@@ -360,7 +605,6 @@ function renderRecommendation(analysis, target) {
 
     target.innerHTML = `
         <strong>${escapeHtml(titleCase(analysis.recommendation.primary_action))}: ${escapeHtml(analysis.identified_model)}</strong>
-        <p>${escapeHtml(analysis.recommendation.rationale)}</p>
         <div class="mt-3 flex flex-wrap gap-2">
             ${analysis.recommendation.alternatives.map((item) => `<span class="facility-tag">${escapeHtml(item)}</span>`).join('')}
         </div>
@@ -492,7 +736,6 @@ function renderCertificate(payload) {
 
     panel.innerHTML = `
         <strong>${escapeHtml(payload.certificate.number)}</strong>
-        <p class="mt-2">${escapeHtml(payload.certificate.share_text)}</p>
         <div class="mt-4 flex flex-col gap-2 sm:flex-row">
             <a class="eco-button eco-button-primary justify-center" href="${payload.certificate.download_url}">
                 <i data-lucide="download"></i><span>Download PDF</span>
@@ -533,6 +776,7 @@ function renderDashboard(dashboard) {
     renderChallenges(dashboard.challenges);
     renderLeaderboard(dashboard.leaderboard);
     renderStateRanking(dashboard.state_ranking);
+    renderRecentActivity(dashboard.recent_activity);
 }
 
 function setDashboardText(key, value) {
@@ -597,7 +841,7 @@ function renderCoupons(coupons) {
 
     target.innerHTML = coupons.map((coupon) => `
         <div class="coupon-row">
-            <span class="text-sm text-zinc-700">${escapeHtml(coupon.title)}</span>
+            <span class="text-sm font-bold">${escapeHtml(coupon.title)}</span>
             <span class="status-chip ${coupon.available ? 'open' : ''}">${coupon.cost} pts</span>
         </div>
     `).join('');
@@ -613,8 +857,8 @@ function renderChallenges(challenges) {
         <div class="challenge-row">
             <div class="flex items-start justify-between gap-3">
                 <div>
-                    <strong class="text-sm text-zinc-900">${escapeHtml(challenge.title)}</strong>
-                    <p class="mt-1 text-xs text-zinc-500">${challenge.points} points - ${escapeHtml(challenge.status)}</p>
+                    <strong class="text-sm">${escapeHtml(challenge.title)}</strong>
+                <p class="mt-1 text-xs">${challenge.points} pts - ${escapeHtml(challenge.status)}</p>
                 </div>
                 <i data-lucide="${challenge.status === 'completed' ? 'circle-check' : 'flame'}" class="text-emerald-700"></i>
             </div>
@@ -633,8 +877,8 @@ function renderLeaderboard(rows) {
     target.innerHTML = rows.map((row, index) => `
         <div class="leader-row">
             <div>
-                <strong class="text-sm text-zinc-900">#${index + 1} ${escapeHtml(row.name)}</strong>
-                <p class="mt-1 text-xs text-zinc-500">${row.devices} recycled devices</p>
+                <strong class="text-sm">#${index + 1} ${escapeHtml(row.name)}</strong>
+                <p class="mt-1 text-xs">${row.devices} devices</p>
             </div>
             <span class="status-chip open">${formatter.format(row.points)} pts</span>
         </div>
@@ -650,10 +894,39 @@ function renderStateRanking(rows = []) {
     target.innerHTML = rows.map((row, index) => `
         <div class="leader-row">
             <div>
-                <strong class="text-sm text-zinc-900">#${index + 1} ${escapeHtml(row.state)}</strong>
-                <p class="mt-1 text-xs text-zinc-500">${row.devices} community actions</p>
+                <strong class="text-sm">#${index + 1} ${escapeHtml(row.state)}</strong>
+                <p class="mt-1 text-xs">${row.devices} actions</p>
             </div>
             <span class="status-chip open">${formatter.format(row.points)} pts</span>
+        </div>
+    `).join('');
+}
+
+function renderRecentActivity(rows = []) {
+    const target = document.querySelector('#recentActivity');
+    if (!target) {
+        return;
+    }
+
+    if (!rows.length) {
+        target.innerHTML = `
+            <div class="empty-state">
+                No activity yet. Scan a device and record disposal to build your verified history.
+            </div>
+        `;
+        return;
+    }
+
+    target.innerHTML = rows.map((row) => `
+        <div class="activity-row">
+            <div>
+                <strong class="text-sm">${escapeHtml(row.device)}</strong>
+                <p class="mt-1 text-xs">${escapeHtml(row.category)} - ${escapeHtml(row.impact)}</p>
+            </div>
+            <div class="text-right">
+                <span class="status-chip open">${formatter.format(row.points)} pts</span>
+                <p class="mt-1 text-[11px]">${escapeHtml(row.date)}</p>
+            </div>
         </div>
     `).join('');
 }
@@ -707,6 +980,9 @@ function setBusy(button, busy, label) {
     button.disabled = busy;
     const span = button.querySelector('span');
     if (span) {
+        if (busy && !button.dataset.defaultLabel) {
+            button.dataset.defaultLabel = span.textContent;
+        }
         span.textContent = label;
     }
 }
@@ -721,6 +997,213 @@ function notify(message) {
     toast.classList.add('show');
     clearTimeout(notify.timer);
     notify.timer = setTimeout(() => toast.classList.remove('show'), 3200);
+}
+
+function bindSmoothAnchors() {
+    document.querySelectorAll('a[href^="#"]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+            const target = document.querySelector(link.getAttribute('href'));
+            if (!target) {
+                return;
+            }
+
+            event.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+}
+
+function bindThemeControls() {
+    const applyTheme = (theme) => {
+        const resolved = theme === 'system'
+            ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : theme;
+        document.documentElement.dataset.theme = resolved;
+        localStorage.setItem('ecocycle-theme', theme);
+    };
+
+    document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        notify(`${titleCase(next)} mode enabled.`);
+    });
+
+    document.querySelector('[data-theme-select]')?.addEventListener('change', (event) => {
+        applyTheme(event.target.value);
+    });
+}
+
+function bindPointerFx() {
+    if (matchMedia('(pointer: coarse), (prefers-reduced-motion: reduce)').matches) {
+        return;
+    }
+
+    let frame = null;
+    document.querySelectorAll('.eco-button, .quick-card, .metric-panel, .timeline-step, .facility-card').forEach((element) => {
+        element.addEventListener('pointermove', (event) => {
+            if (frame) {
+                return;
+            }
+
+            frame = requestAnimationFrame(() => {
+                const rect = element.getBoundingClientRect();
+                element.style.setProperty('--x', `${event.clientX - rect.left}px`);
+                element.style.setProperty('--y', `${event.clientY - rect.top}px`);
+                frame = null;
+            });
+        });
+    });
+}
+
+function bindSideNav() {
+    const backdrop = document.querySelector('.side-nav-backdrop');
+    const open = () => {
+        document.body.classList.add('sidebar-open');
+        if (backdrop) {
+            backdrop.hidden = false;
+        }
+    };
+    const close = () => {
+        document.body.classList.remove('sidebar-open');
+        if (backdrop) {
+            backdrop.hidden = true;
+        }
+    };
+
+    document.querySelectorAll('[data-sidebar-toggle]').forEach((button) => button.addEventListener('click', open));
+    document.querySelectorAll('[data-sidebar-close]').forEach((button) => button.addEventListener('click', close));
+    document.querySelectorAll('.side-nav a').forEach((link) => link.addEventListener('click', close));
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            close();
+        }
+    });
+}
+
+function bindPasswordToggles() {
+    document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const input = button.closest('.password-field')?.querySelector('input');
+
+            if (!input) {
+                return;
+            }
+
+            input.type = input.type === 'password' ? 'text' : 'password';
+            button.setAttribute('aria-label', input.type === 'password' ? 'Show password' : 'Hide password');
+        });
+    });
+}
+
+function bindOtpInput() {
+    document.querySelector('[data-otp-input]')?.addEventListener('input', (event) => {
+        event.target.value = event.target.value.replace(/\D/g, '').slice(0, 6);
+    });
+}
+
+function bindClientValidation() {
+    document.querySelectorAll('[data-validate-form]').forEach((form) => {
+        form.addEventListener('submit', (event) => {
+            if (event.submitter?.formNoValidate) {
+                return;
+            }
+
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                notify('Check the highlighted fields.');
+                form.classList.add('was-validated');
+            }
+        });
+    });
+}
+
+function bindGlobalSearch() {
+    const dialog = document.querySelector('#globalSearch');
+    const input = document.querySelector('#globalSearchInput');
+    const results = document.querySelector('#globalSearchResults');
+    let timer = null;
+
+    if (!dialog || !input || !results) {
+        return;
+    }
+
+    const open = () => {
+        dialog.hidden = false;
+        document.body.style.overflow = 'hidden';
+        input.focus();
+    };
+
+    const close = () => {
+        dialog.hidden = true;
+        document.body.style.overflow = '';
+        input.value = '';
+        results.innerHTML = '<div class="empty-state">Start typing to search across the workspace.</div>';
+    };
+
+    document.querySelectorAll('[data-search-open]').forEach((button) => button.addEventListener('click', open));
+    document.querySelectorAll('[data-search-close]').forEach((button) => button.addEventListener('click', close));
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) {
+            close();
+        }
+    });
+    document.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+            event.preventDefault();
+            open();
+        }
+        if (event.key === 'Escape' && !dialog.hidden) {
+            close();
+        }
+    });
+
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        const query = input.value.trim();
+
+        if (query.length < 2) {
+            results.innerHTML = '<div class="empty-state">Type at least two characters.</div>';
+            return;
+        }
+
+        results.innerHTML = '<div class="search-loading"><span></span><span></span><span></span></div>';
+        timer = setTimeout(async () => {
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+                    headers: { Accept: 'application/json' },
+                });
+                const payload = await parseJson(response);
+                renderSearchResults(payload.data ?? []);
+            } catch (error) {
+                results.innerHTML = `<div class="empty-state">${escapeHtml(error.message || 'Search failed.')}</div>`;
+            }
+        }, 180);
+    });
+}
+
+function renderSearchResults(items) {
+    const results = document.querySelector('#globalSearchResults');
+
+    if (!results) {
+        return;
+    }
+
+    if (!items.length) {
+        results.innerHTML = '<div class="empty-state">No matching results.</div>';
+        return;
+    }
+
+    results.innerHTML = items.map((item) => `
+        <a class="search-result-row" href="${escapeHtml(item.url)}">
+            <span><i data-lucide="${escapeHtml(item.icon)}"></i></span>
+            <div>
+                <strong>${escapeHtml(item.title)}</strong>
+                <small>${escapeHtml(item.subtitle)}</small>
+            </div>
+            <em>${escapeHtml(item.type)}</em>
+        </a>
+    `).join('');
+    createIcons({ icons });
 }
 
 function titleCase(value) {

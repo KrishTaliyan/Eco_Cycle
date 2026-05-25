@@ -5,15 +5,22 @@ namespace App\Http\Controllers\Sustainability;
 use App\Http\Controllers\Controller;
 use App\Models\RecyclingActivity;
 use App\Models\RecyclingCertificate;
+use App\Services\ActivityLogger;
 use App\Services\DeviceIntelligenceService;
 use App\Services\FacilityFinder;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class RecyclingController extends Controller
 {
-    public function complete(Request $request, DeviceIntelligenceService $devices, FacilityFinder $facilities)
-    {
+    public function complete(
+        Request $request,
+        DeviceIntelligenceService $devices,
+        FacilityFinder $facilities,
+        ActivityLogger $logger,
+        NotificationService $notifications,
+    ) {
         $validated = $request->validate([
             'model_name' => ['required', 'string', 'max:120'],
             'condition' => ['nullable', 'string', 'max:60'],
@@ -23,10 +30,11 @@ class RecyclingController extends Controller
 
         $analysis = $devices->analyze($validated['model_name'], null, $validated['condition'] ?? 'unknown');
         $facility = isset($validated['facility_id']) ? $facilities->find($validated['facility_id']) : null;
-        $sessionId = $request->session()->getId();
+        $sessionId = $request->hasSession() ? $request->session()->getId() : null;
 
         $activity = RecyclingActivity::create([
             'session_id' => $sessionId,
+            'user_id' => $request->user()?->id,
             'device_model' => $analysis['identified_model'],
             'device_category' => $analysis['category_label'],
             'condition' => $analysis['condition'],
@@ -46,6 +54,7 @@ class RecyclingController extends Controller
         $verificationToken = Str::upper(Str::random(16));
         $certificate = RecyclingCertificate::create([
             'recycling_activity_id' => $activity->id,
+            'user_id' => $request->user()?->id,
             'session_id' => $sessionId,
             'certificate_number' => 'ECO-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
             'holder_name' => $validated['holder_name'] ?? 'Eco Recycler',
@@ -63,6 +72,24 @@ class RecyclingController extends Controller
                 'facility' => $facility['name'] ?? 'Verified recycling partner',
             ],
             'issued_at' => now(),
+        ]);
+
+        if ($request->user()) {
+            $notifications->send(
+                $request->user(),
+                'Certificate generated',
+                "{$certificate->certificate_number} is ready for {$activity->device_model}.",
+                'certificate',
+                'Download PDF',
+                route('certificates.download', $certificate),
+                ['certificate_number' => $certificate->certificate_number],
+            );
+        }
+
+        $logger->record('recycling.completed', 'Recorded disposal and generated certificate.', $request, $request->user(), [
+            'certificate' => $certificate->certificate_number,
+            'device' => $activity->device_model,
+            'points' => $activity->points_awarded,
         ]);
 
         return response()->json([

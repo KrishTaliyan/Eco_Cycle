@@ -17,7 +17,7 @@ class SustainabilityController extends Controller
         FacilityFinder $facilities,
     ) {
         return view('sustainability.index', [
-            'dashboard' => $dashboard->snapshot($request->session()->getId()),
+            'dashboard' => $dashboard->snapshot($request->session()->getId(), $request->user()),
             'deviceCatalog' => $devices->catalogSummary(),
             'facilityPreview' => array_slice($facilities->all(), 0, 5),
             'cityPresets' => $facilities->cityPresets(),

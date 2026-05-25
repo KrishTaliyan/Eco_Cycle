@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,30 +18,89 @@ class ExampleTest extends TestCase
         $response
             ->assertStatus(200)
             ->assertSee('EcoCycle Smart')
-            ->assertSee('Recycle electronics safely. Earn rewards.');
+            ->assertSee('Scan. Pickup. Reward.');
     }
 
     public function test_customer_pages_load(): void
     {
-        foreach (['/facilities', '/pickup', '/learn', '/rewards', '/about', '/contact', '/login', '/signup'] as $path) {
+        foreach (['/facilities', '/pickup', '/learn', '/rewards', '/about', '/contact', '/terms', '/login', '/signup', '/forgot-password'] as $path) {
             $this->get($path)->assertOk();
         }
     }
 
-    public function test_user_can_register_and_logout(): void
+    public function test_demo_login_opens_workspace(): void
+    {
+        $this->post('/demo-login')->assertRedirect('/dashboard');
+
+        $this->assertAuthenticated();
+        $this->assertAuthenticatedAs(User::where('email', 'demo@ecocycle.test')->first());
+    }
+
+    public function test_user_can_register_verify_and_logout(): void
     {
         $response = $this->post('/signup', [
             'name' => 'Eco User',
             'email' => 'eco@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
         ]);
 
-        $response->assertRedirect('/');
+        $response->assertRedirect('/dashboard');
         $this->assertAuthenticated();
+        $this->assertDatabaseHas('user_settings', ['user_id' => auth()->id()]);
+        $this->assertDatabaseHas('email_verification_codes', ['user_id' => auth()->id()]);
 
         $this->post('/logout')->assertRedirect('/');
         $this->assertGuest();
+    }
+
+    public function test_protected_dashboard_requires_login(): void
+    {
+        $this->get('/dashboard')->assertRedirect('/login');
+    }
+
+    public function test_role_updates_replace_previous_role_permissions(): void
+    {
+        $admin = Role::create(['name' => 'admin', 'label' => 'Admin']);
+        $customer = Role::create(['name' => 'customer', 'label' => 'Customer']);
+        $user = User::factory()->create(['role' => 'customer']);
+
+        $user->assignRole('admin');
+        $this->assertTrue($user->hasRole('admin'));
+
+        $user->assignRole('customer');
+
+        $this->assertFalse($user->hasRole('admin'));
+        $this->assertTrue($user->hasRole('customer'));
+        $this->assertDatabaseMissing('role_user', [
+            'user_id' => $user->id,
+            'role_id' => $admin->id,
+        ]);
+        $this->assertDatabaseHas('role_user', [
+            'user_id' => $user->id,
+            'role_id' => $customer->id,
+        ]);
+    }
+
+    public function test_customer_request_creates_visible_notification(): void
+    {
+        $user = User::factory()->create(['role' => 'customer']);
+
+        $this->actingAs($user)
+            ->post('/customer/recycling-requests', [
+                'category' => 'Laptop',
+                'brand' => 'Dell',
+                'model' => 'Inspiron 15',
+                'condition' => 'working',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $user->id,
+            'type' => 'request',
+            'title' => 'Device submitted',
+        ]);
+        $this->assertDatabaseCount('notifications', 0);
     }
 
     public function test_device_analysis_returns_materials_and_awareness_data(): void
@@ -102,6 +163,8 @@ class ExampleTest extends TestCase
                 'points_preview',
                 'prep_checklist',
             ]);
+
+        $this->assertDatabaseCount('pickup_requests', 1);
     }
 
     public function test_recycling_completion_creates_certificate(): void
@@ -125,5 +188,42 @@ class ExampleTest extends TestCase
 
         $this->get($response->json('certificate.verify_url'))->assertOk();
         $this->get($response->json('certificate.download_url'))->assertOk();
+    }
+
+    public function test_global_search_returns_facilities_devices_and_actions(): void
+    {
+        $response = $this->getJson('/api/search?q=laptop');
+
+        $response
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['type', 'title', 'subtitle', 'url', 'icon'],
+                ],
+            ]);
+    }
+
+    public function test_jwt_login_flow_issues_tokens(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'api@example.com',
+            'password' => 'Password123',
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'Password123',
+            'device_name' => 'Feature test',
+        ]);
+
+        $token = $response
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['tokens' => ['access_token', 'refresh_token']]])
+            ->json('data.tokens.access_token');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.user.email', 'api@example.com');
     }
 }

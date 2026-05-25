@@ -10,6 +10,6 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request, DashboardService $dashboard)
     {
-        return response()->json($dashboard->snapshot($request->session()->getId()));
+        return response()->json($dashboard->snapshot($request->session()->getId(), $request->user()));
     }
 }

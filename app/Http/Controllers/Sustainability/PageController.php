@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Sustainability;
 
 use App\Http\Controllers\Controller;
 use App\Services\DashboardService;
-use App\Services\DeviceIntelligenceService;
 use App\Services\FacilityFinder;
 use Illuminate\Http\Request;
 
@@ -28,7 +27,7 @@ class PageController extends Controller
     public function rewards(Request $request, DashboardService $dashboard)
     {
         return view('sustainability.rewards', [
-            'dashboard' => $dashboard->snapshot($request->session()->getId()),
+            'dashboard' => $dashboard->snapshot($request->session()->getId(), $request->user()),
         ]);
     }
 
@@ -42,6 +41,11 @@ class PageController extends Controller
     public function contact()
     {
         return view('sustainability.contact');
+    }
+
+    public function terms()
+    {
+        return view('sustainability.terms');
     }
 
     public function submitContact(Request $request)

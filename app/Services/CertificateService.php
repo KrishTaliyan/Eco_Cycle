@@ -13,7 +13,7 @@ class CertificateService
     {
         $renderer = new ImageRenderer(
             new RendererStyle($size),
-            new SvgImageBackEnd(),
+            new SvgImageBackEnd,
         );
 
         $svg = (new Writer($renderer))->writeString($payload);

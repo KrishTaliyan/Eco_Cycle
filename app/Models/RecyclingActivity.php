@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class RecyclingActivity extends Model
@@ -12,6 +13,7 @@ class RecyclingActivity extends Model
 
     protected $fillable = [
         'session_id',
+        'user_id',
         'device_model',
         'device_category',
         'condition',
@@ -47,4 +49,14 @@ class RecyclingActivity extends Model
     {
         return $this->hasOne(RecyclingCertificate::class);
     }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }
+
+
+
+
+

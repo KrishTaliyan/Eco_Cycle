@@ -1,35 +1,60 @@
-@extends('layouts.app')
+@extends('layouts.auth')
 
-@section('title', 'Login')
+@section('title', 'Sign in')
 
 @section('content')
-    <section class="auth-shell">
-        <article class="auth-card">
-            <span class="eyebrow">Welcome back</span>
-            <h1>Login to your wallet</h1>
-            <p>Track points, certificates, pickups, and recycling progress.</p>
+    <h1>Welcome back</h1>
+    <p>Sign in to your recycling workspace.</p>
 
-            <form class="mt-5 grid gap-3" method="POST" action="{{ route('login.store') }}">
-                @csrf
-                <label class="field">
-                    <span>Email</span>
-                    <input name="email" type="email" value="{{ old('email') }}" required autofocus>
-                </label>
-                <label class="field">
-                    <span>Password</span>
-                    <input name="password" type="password" required>
-                </label>
-                <label class="flex items-center gap-2 text-sm text-zinc-600">
-                    <input name="remember" type="checkbox" value="1">
-                    Remember me
-                </label>
-                @if ($errors->any())
-                    <p class="text-sm font-medium text-rose-700">{{ $errors->first() }}</p>
-                @endif
-                <button class="eco-button eco-button-primary justify-center" type="submit">Login</button>
-            </form>
+    @if (session('status'))
+        <div class="notice-success">{{ session('status') }}</div>
+    @endif
 
-            <p class="mt-4 text-sm text-zinc-600">New here? <a class="font-semibold text-emerald-700" href="{{ route('register') }}">Create account</a></p>
-        </article>
-    </section>
+    <form class="auth-form" method="POST" action="{{ route('login.store') }}" data-validate-form>
+        @csrf
+
+        <label class="field">
+            <span>Email address</span>
+            <input type="email" name="email" value="{{ old('email') }}" autocomplete="email" autofocus required>
+            @error('email') <span class="field-error">{{ $message }}</span> @enderror
+        </label>
+
+        <label class="field password-field">
+            <span>Password</span>
+            <input type="password" name="password" autocomplete="current-password" required>
+            <button class="password-toggle" type="button" data-password-toggle aria-label="Show password"><i data-lucide="eye"></i></button>
+            @error('password') <span class="field-error">{{ $message }}</span> @enderror
+        </label>
+
+        <div class="auth-options">
+            <label class="check-label">
+                <input type="checkbox" name="remember">
+                <span>Stay signed in</span>
+            </label>
+            @if (Route::has('password.request'))
+                <a href="{{ route('password.request') }}">Forgot password?</a>
+            @endif
+        </div>
+
+        <button class="eco-button eco-button-primary auth-submit" type="submit">
+            <i data-lucide="log-in"></i>
+            <span>Sign in</span>
+        </button>
+    </form>
+
+    <div class="demo-card">
+        <p>Try the full platform without signing up.</p>
+        <form method="POST" action="{{ route('login.demo') }}">
+            @csrf
+            <button class="eco-button eco-button-secondary auth-submit" type="submit">
+                <i data-lucide="play-circle"></i>
+                <span>Launch demo workspace</span>
+            </button>
+        </form>
+    </div>
+
+    <div class="auth-footer">
+        Don't have an account?
+        <a href="{{ route('register') }}">Create one free</a>
+    </div>
 @endsection

@@ -3,17 +3,18 @@
 namespace App\Services;
 
 use App\Models\RecyclingActivity;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 class DashboardService
 {
-    public function snapshot(?string $sessionId): array
+    public function snapshot(?string $sessionId, ?User $user = null): array
     {
         $allActivities = RecyclingActivity::query()->latest('completed_at')->get();
-        $userActivities = $sessionId
-            ? $allActivities->where('session_id', $sessionId)->values()
-            : collect();
+        $userActivities = $user
+            ? $allActivities->where('user_id', $user->id)->values()
+            : ($sessionId ? $allActivities->where('session_id', $sessionId)->values() : collect());
 
         return [
             'totals' => $this->totals($allActivities),
@@ -32,6 +33,12 @@ class DashboardService
                 'impact' => "{$activity->co2_kg} kg CO2 reduced",
                 'date' => $activity->completed_at?->format('M j, Y') ?? $activity->created_at->format('M j, Y'),
             ])->all(),
+            'operations' => [
+                'pickup_requests' => $user?->pickupRequests()->count() ?? 0,
+                'bookmarks' => $user?->bookmarks()->count() ?? 0,
+                'unread_notifications' => $user?->notifications()->unread()->count() ?? 0,
+                'certificates' => $user?->certificates()->count() ?? $userActivities->count(),
+            ],
         ];
     }
 

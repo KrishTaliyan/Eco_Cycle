@@ -12,6 +12,7 @@ class RecyclingCertificate extends Model
 
     protected $fillable = [
         'recycling_activity_id',
+        'user_id',
         'session_id',
         'certificate_number',
         'holder_name',
@@ -32,5 +33,10 @@ class RecyclingCertificate extends Model
     public function activity(): BelongsTo
     {
         return $this->belongsTo(RecyclingActivity::class, 'recycling_activity_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }
