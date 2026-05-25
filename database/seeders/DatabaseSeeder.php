@@ -46,11 +46,14 @@ class DatabaseSeeder extends Seeder
         $shopOwner->permissions()->sync($permissions->whereIn('name', ['workspace.view', 'workspace.manage', 'certificates.issue', 'pickups.manage'])->pluck('id'));
         $admin->permissions()->sync($permissions->pluck('id'));
 
+        $adminEmail = env('ADMIN_EMAIL') ?: 'test@example.com';
+        $adminPassword = env('ADMIN_PASSWORD') ?: 'password';
+
         $user = User::query()->updateOrCreate(
-            ['email' => 'test@example.com'],
+            ['email' => $adminEmail],
             [
-                'name' => 'Test User',
-                'password' => 'password',
+                'name' => env('ADMIN_NAME') ?: 'Platform Admin',
+                'password' => $adminPassword,
                 'role' => 'admin',
                 'email_verified_at' => now(),
             ],
